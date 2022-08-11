@@ -4,16 +4,53 @@
 #
 #    pip-compile
 #
-cycler==0.10.0            # via matplotlib
-kiwisolver==1.2.0         # via matplotlib
+cycler==0.10.0
+    # via matplotlib
+et-xmlfile==1.1.0
+    # via openpyxl
+joblib==1.1.0
+    # via scikit-learn
+kiwisolver==1.2.0
+    # via matplotlib
 matplotlib==3.2.1
-numpy==1.18.5
+    # via
+    #   -r requirements.in
+    #   seaborn
+numpy==1.22.0
+    # via
+    #   -r requirements.in
+    #   matplotlib
+    #   pandas
+    #   scikit-learn
+    #   scipy
+    #   seaborn
+openpyxl==3.0.10
+    # via -r requirements.in
 pandas==1.0.4
-pyparsing==2.4.7          # via matplotlib
-python-dateutil==2.8.2    # via matplotlib, pandas
-pytz==2020.1              # via pandas
-scipy==1.4.1              # via seaborn
+    # via
+    #   -r requirements.in
+    #   seaborn
+pyparsing==2.4.7
+    # via matplotlib
+python-dateutil==2.8.2
+    # via
+    #   matplotlib
+    #   pandas
+pytz==2020.1
+    # via pandas
+scikit-learn==1.1.2
+    # via sklearn
+scipy==1.4.1
+    # via
+    #   scikit-learn
+    #   seaborn
 seaborn==0.10.1
-six==1.15.0               # via cycler, python-dateutil
-sklearn
-openpyxl
+    # via -r requirements.in
+six==1.15.0
+    # via
+    #   cycler
+    #   python-dateutil
+sklearn==0.0
+    # via -r requirements.in
+threadpoolctl==3.1.0
+    # via scikit-learn
