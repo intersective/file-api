@@ -183,31 +183,31 @@ jobs:
 
 
 
-# ################################################
-# #  PERFORM LINT TEST
-# ################################################
-      - name: Run lint test if present
-        run:  |
-          npm run lint --if-present
+# # ################################################
+# # #  PERFORM LINT TEST
+# # ################################################
+#       - name: Run lint test if present
+#         run:  |
+#           npm run lint --if-present
 
 
 
-# ###############################################################
-# #  PERFORM UNIT TEST
-# ##############################################################
-      - name: Performing Unit test
-        run: |
-          npm run test --if-present
+# # ###############################################################
+# # #  PERFORM UNIT TEST
+# # ##############################################################
+#       - name: Performing Unit test
+#         run: |
+#           npm run test --if-present
 
 
-# ###############################################################
-# #  SONARCLOUD SCANNER
-# ##############################################################
-      - name: Performing Sonarcloud Scanner
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+# # ###############################################################
+# # #  SONARCLOUD SCANNER
+# # ##############################################################
+#       - name: Performing Sonarcloud Scanner
+#         uses: SonarSource/sonarcloud-github-action@master
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+#           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
 
 
