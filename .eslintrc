@@ -1,0 +1,20 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "plugins": [
+    "@typescript-eslint"
+  ],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "rules": {
+    "@typescript-eslint/no-explicit-any": ["off"],
+    "@typescript-eslint/explicit-module-boundary-types": ["off"],
+    "@typescript-eslint/no-var-requires": ["off"],
+    "indent": "off",
+    "@typescript-eslint/indent": ["error", 2, { "SwitchCase": 1 }]
+  },
+  "ignorePatterns": ["node_modules/**/*", "**/__mocks__/**/*", "*.spec.ts"]
+}

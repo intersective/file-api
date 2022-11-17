@@ -1,17 +1,41 @@
-# Data science problem
+# File-Api
 
-This is a Binder compatible repo which contains a guided begginer level Data Science problem in the form of Jupyter notebooks. The problem is split in 2 tasks with a first task for data exploration and cleaning and the second task for data modeling and analysis. 
+This file api repo is dedicated for all files related services to handle.
 
-The notebooks are organised following the tweek, twiddle pedagogical pattern which scales to the learners coding level. 
 
-The tasks are self explanatory and there is even a bynder intro that would help the learners be familiar with the binder environement before they  start working on the DS problem.
 
-Each task should not take more than 30min to run through and the full solution is already provided as  the focus is more about learning the problem solving prosess rather than finding the right answer.
+## How to use
 
-## Notes
-The `requirements.txt` file should list all Python libraries that your notebooks
-depend on, and they will be installed using:
 
-```
-pip install -r requirements.txt
-```
+## Development
+
+### Prerequisite
+* Practera CORE docker up
+
+### Installation
+1. `npm install`
+
+### Start lambda function on local
+1. Create `.env` file and modify or add parameters if needed `cp env.example .env`
+1. Run `npm run dev` to start a serverless lambda funtion on local
+
+### Trigger lambda function
+1. Open another terminal window, under the same directory, run `node trigger.js` to trigger the lambda function
+
+## Testing
+
+
+
+## Unit Test
+
+
+## Logging
+- We use [DAZN Lambda Powertools](https://github.com/getndazn/dazn-lambda-powertools) as the error logging tool.
+- Environment variable `LOG_LEVEL` has 4 values:
+ - `DEBUG` - Display all logs
+ - `INFO` - Display `Log.info()` logs and above
+ - `WARN` - Display `Log.warn()` logs and above
+ - `ERROR` - Display `Log.error()` only
+- Environment variable `SAMPLE_DEBUG_LOG_RATE` controls the sampling rate of debug logs
+ - By default it is 0.01, that means we will log debug logs for 1% of the requests
+ - If we wanna enable debug logs for all services that is related to the current service, we can change it to 1. **Note: Remember to change it back to 0.01 after debugging, as this will increase the AWS cost**

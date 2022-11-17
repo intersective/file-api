@@ -1,0 +1,57 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`1. get cached value 1`] = `"cached data"`;
+
+exports[`2. read data from database 1`] = `
+Object {
+  "activeUserCount": Object {
+    "admin": 2,
+    "coordinator": 4,
+    "mentor": 5,
+    "participant": 20,
+  },
+  "enrolledUserCount": Object {
+    "admin": 4,
+    "coordinator": 11,
+    "mentor": 8,
+    "participant": 8,
+  },
+  "feedbackLoopCompleted": 4,
+  "feedbackLoopStarted": 15,
+  "onTrackRatio": 0.25,
+  "registeredUserCount": Object {
+    "admin": 1,
+    "coordinator": 4,
+    "mentor": 2,
+    "participant": 3,
+  },
+  "reviewRatingAvg": 0.4,
+}
+`;
+
+exports[`3. no team stats 1`] = `
+Object {
+  "activeUserCount": Object {
+    "admin": 2,
+    "coordinator": 4,
+    "mentor": 5,
+    "participant": 20,
+  },
+  "enrolledUserCount": Object {
+    "admin": 4,
+    "coordinator": 11,
+    "mentor": 8,
+    "participant": 8,
+  },
+  "feedbackLoopCompleted": 4,
+  "feedbackLoopStarted": 15,
+  "onTrackRatio": -1,
+  "registeredUserCount": Object {
+    "admin": 1,
+    "coordinator": 4,
+    "mentor": 2,
+    "participant": 3,
+  },
+  "reviewRatingAvg": 0.4,
+}
+`;

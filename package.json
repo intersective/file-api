@@ -1,0 +1,44 @@
+{
+  "name": "file-api",
+  "version": "1.1.0",
+  "description": "This file api repo is dedicated for all files related services to handle",
+  "main": "index.js",
+  "scripts": {
+    "dev": "serverless offline",
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
+    "test": "npx jest --coverage",
+    "test-update": "npx jest --updateSnapshot",
+    "trigger": "node trigger.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@dazn/lambda-powertools-http-client": "^1.28.1",
+    "@dazn/lambda-powertools-logger": "^1.28.1",
+    "@dazn/lambda-powertools-pattern-basic": "^1.28.1",
+    "@middy/do-not-wait-for-empty-event-loop": "^1.5.2",
+    "aws-sdk": "^2.832.0",
+    "dotenv": "^8.2.0",
+    "locutus": "^2.0.14",
+    "pg": "^8.5.1",
+    "redis": "^3.0.2",
+    "serverless-plugin-aws-alerts": "^1.7.3"
+  },
+  "devDependencies": {
+    "@types/locutus": "0.0.6",
+    "@types/redis": "^2.8.28",
+    "@typescript-eslint/eslint-plugin": "^4.14.1",
+    "@typescript-eslint/eslint-plugin-tslint": "^4.14.1",
+    "@typescript-eslint/parser": "^4.14.1",
+    "eslint": "^7.18.0",
+    "jest": "^26.6.3",
+    "jest-express": "^1.12.0",
+    "jest-sonar-reporter": "^2.0.0",
+    "serverless": "^2.50.0",
+    "serverless-offline": "^6.8.0",
+    "serverless-offline-sns": "^0.68.0",
+    "serverless-plugin-typescript": "^1.1.9",
+    "ts-jest": "^26.4.4",
+    "typescript": "^4.1.3"
+  }
+}

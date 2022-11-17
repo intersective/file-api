@@ -1,0 +1,180 @@
+service: ${env:STACK_NAME}-${env:ROOTSTACK}
+
+frameworkVersion: '2'
+useDotenv: true
+
+package:
+  include:
+    - artifacts/**/*
+    - serverless.yml
+    - .env
+    - package.json
+    - package-lock.json
+
+provider:
+  logRetentionInDays: 365 # Set the default RetentionInDays for a CloudWatch LogGroup
+  name: aws
+  runtime: nodejs14.x
+  timeout: 30
+  memorySize: 128
+  region: ${env:REGION}
+  stage: ${env:ENV}
+  lambdaHashingVersion: 20201221
+  deploymentBucket:
+    blockPublicAccess: true 
+    serverSideEncryption: AES256 
+    tags: 
+      StackName: ${env:STACK_NAME}
+      Env: ${env:ENV}
+  stackTags: # Optional CF stack tags
+    StackName: ${env:STACK_NAME}
+    Env: ${env:ENV}
+  tags: # Optional service wide function tags
+    StackName: ${env:STACK_NAME}
+    Env: ${env:ENV}
+  tracing:
+    lambda: true
+  vpc:
+    securityGroupIds: !Split [",", "${env:SECURITYGP}"]
+    subnetIds: !Split [",", "${env:PRIVATESUBNET}"]
+  
+  iam:
+    role:
+      statements: 
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:DeleteLogGroup
+            - logs:PutLogEvents
+            - logs:DescribeLogStreams
+            - logs:DescribeLogGroups
+            - logs:FilterLogEvents
+          Resource: "arn:aws:logs:*:*:*"
+        - Effect: Allow
+          Action:
+            - lambda:AddPermission
+            - lambda:CreateAlias
+            - lambda:DeleteFunction
+            - lambda:InvokeFunction
+            - lambda:PublishVersion
+            - lambda:RemovePermission
+            - lambda:Update*
+          Resource:
+            - arn:aws:lambda:*:*:function:*
+        - Effect: Allow
+          Action:
+            - apigateway:GET
+            - apigateway:POST
+            - apigateway:PUT
+            - apigateway:DELETE
+            - apigateway:PATCH
+          Resource:
+            - arn:aws:apigateway:*::/restapis*
+            - arn:aws:apigateway:*::/apikeys*
+            - arn:aws:apigateway:*::/usageplans*
+        - Effect: Allow
+          Action:
+            - secretsmanager:GetSecretValue
+            - ssm:*
+          Resource:
+            - arn:aws:secretsmanager:*:*:secret:*
+        - Effect: "Allow" # xray permissions (required)
+          Action:
+            - "xray:PutTraceSegments"
+            - "xray:PutTelemetryRecords"
+          Resource:
+            - "*"
+        - Effect: Allow
+          Action:
+            - ec2:CreateNetworkInterface
+            - ec2:AttachNetworkInterface
+            - ec2:DescribeNetworkInterfaces
+            - ec2:DetachNetworkInterface
+            - ec2:DeleteNetworkInterface
+            - ec2:DescribeSecurityGroups
+            - ec2:DescribeSubnets
+            - ec2:DescribeVpcs
+          Resource: '*'
+
+functions:
+  services:
+    handler: src/index.handler
+    description: ${env:STACK_NAME}-${env:ROOTSTACK}-lambda
+
+plugins:
+  - serverless-plugin-aws-alerts
+  - serverless-offline
+  - serverless-plugin-typescript
+
+custom:
+  serverless-offline:
+    host: 0.0.0.0
+
+
+  alerts:
+    stages:
+      - live
+      - test
+      - dev
+    topics:
+      alarm:
+        topic: {'Fn::ImportValue': !Sub '${env:STACK_NAME}-ChatBotSNSTopicARN-${env:ENV}'}
+    definitions:  # these defaults are merged with your definitions
+      functionErrors:
+        namespace: 'AWS/Lambda'
+        metric: Errors
+        threshold: 5
+        statistic: Sum
+        period: 180
+        evaluationPeriods: 3
+        datapointsToAlarm: 3
+        comparisonOperator: GreaterThanOrEqualToThreshold
+        treatMissingData: notBreaching # override treatMissingData
+      functionThrottles:
+        namespace: 'AWS/Lambda'
+        metric: Throttles
+        threshold: 5
+        statistic: Sum
+        period: 180
+        evaluationPeriods: 3
+        datapointsToAlarm: 3
+        comparisonOperator: GreaterThanOrEqualToThreshold
+        treatMissingData: notBreaching # override treatMissingData
+      functionInvocations:
+        namespace: 'AWS/Lambda'
+        metric: Invocations
+        threshold: 1000
+        statistic: Sum
+        period: 180
+        evaluationPeriods: 3
+        datapointsToAlarm: 3
+        comparisonOperator: GreaterThanOrEqualToThreshold
+        treatMissingData: notBreaching # override treatMissingData
+      functionDuration:
+        namespace: 'AWS/Lambda'
+        metric: Duration
+        threshold: 28000 # 28 seconds
+        statistic: 'p99'
+        period: 180
+        evaluationPeriods: 3
+        datapointsToAlarm: 3
+        comparisonOperator: GreaterThanOrEqualToThreshold
+        treatMissingData: notBreaching # override treatMissingData
+        evaluateLowSampleCountPercentile: ignore
+      CustomMetricFilter:
+        metric: CustomMetricFilterError
+        threshold: 5
+        statistic: Sum
+        period: 180
+        evaluationPeriods: 3
+        datapointsToAlarm: 3
+        comparisonOperator: GreaterThanOrEqualToThreshold
+        pattern: 'ERROR'
+        treatMissingData: notBreaching # override treatMissingData
+    alarms:
+      - functionErrors
+      - functionThrottles
+      - functionInvocations
+      - functionDuration
+      - CustomMetricFilter
