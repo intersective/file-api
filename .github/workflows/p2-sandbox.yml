@@ -150,7 +150,9 @@ jobs:
           CDNSharedACMCertificateArn=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-CDNSharedACMCertificateArn-$ENV\`].Value" --no-paginate --output text)
           ChatBotSNSTopicARN=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-ChatBotSNSTopicARN-$ENV\`].Value" --no-paginate --output text)
           SECURITYGP=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-CacheClientSecurityGroup-$ENV\`].Value" --no-paginate --output text),$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-DBClientSecurityGroup-$ENV\`].Value" --no-paginate --output text)
-          PRIVATESUBNET=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-SubnetsPrivate-$ENV\`].Value" --no-paginate --output text)
+          # SECURITYGP=sg-0eb23e4da98937aec,sg-0fb77132e492a65e9
+          # PRIVATESUBNET=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-SubnetsPrivate-$ENV\`].Value" --no-paginate --output text)
+          PRIVATESUBNET=subnet-0812b1a0ec1dd9d57,subnet-0ec3712b107c4e770,subnet-0e45ba89c28eae83c
           
           EOF
           
