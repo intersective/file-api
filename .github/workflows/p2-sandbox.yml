@@ -179,6 +179,9 @@ jobs:
           DB_LOG_DATABASE=$(aws secretsmanager get-secret-value --secret-id $STACK_NAME-CoreDBSecret-$ENV| jq --raw-output '.SecretString' | jq -r .dbname)
           DB_LOG_USER=$(aws secretsmanager get-secret-value --secret-id $STACK_NAME-CoreDBSecret-$ENV| jq --raw-output '.SecretString' | jq -r .username)
           CURRENT_REGION=$REGION
+          FILEAPIS3BUCKET=files.$PUBLICZONENAME
+          FILESTACKAWSID=593058860426
+          P1STACKAWSID=
           
           EOF
           
