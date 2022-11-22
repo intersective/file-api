@@ -96,6 +96,11 @@ provider:
             - ec2:DescribeSubnets
             - ec2:DescribeVpcs
           Resource: '*'
+        - Effect: Allow
+          Action:
+            - s3:*
+          Resource: 'arn:aws:s3:::${env:FILEAPIS3BUCKET}/*'
+
 
 functions:
   services:
@@ -178,3 +183,200 @@ custom:
       - functionInvocations
       - functionDuration
       - CustomMetricFilter
+
+
+
+resources:
+    
+  Resources:
+
+    ## Specifying the CloudFront Origin Access Identity CDN Distribution to server your Web Application
+    FileApiCloudFrontOriginAccessIdentity:
+      Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity'
+      Properties:
+        CloudFrontOriginAccessIdentityConfig:
+          Comment: "Cloudfront Origin identity for ${env:FILEAPIS3BUCKET}"
+
+    ## Specifying the CloudFront Distribution to server your Web Application
+    FileApiCloudFrontDistribution:
+      DependsOn: [FileApiCloudFrontSecurityHeaderResponse]
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Aliases:
+            - ${env:FILEAPIS3BUCKET}
+          Comment: "Cloudfront Origin identity for ${env:FILEAPIS3BUCKET}"
+          DefaultCacheBehavior:
+            AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+            - PUT
+            - POST
+            - PATCH
+            - DELETE
+            CachedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+            Compress: true
+            DefaultTTL: 3600 # in seconds
+            ForwardedValues:
+              Cookies:
+                Forward: none
+              QueryString: false
+            MaxTTL: 86400 # in seconds
+            MinTTL: 60 # in seconds
+            TargetOriginId: ${env:FILEAPIS3BUCKET}
+            ViewerProtocolPolicy: 'redirect-to-https'
+            ResponseHeadersPolicyId: !Ref FileApiCloudFrontSecurityHeaderResponse
+          # DefaultRootObject: index.html
+          CustomErrorResponses:
+            - ErrorCode: 404
+              ResponseCode: 200
+              ResponsePagePath: /index.html #TBD
+            - ErrorCode: 403
+              ResponseCode: 200
+              ResponsePagePath: /index.html #TBD
+          Enabled: true
+          HttpVersion: http2
+          IPV6Enabled: true
+          Origins:
+          - DomainName: '${env:FILEAPIS3BUCKET}.s3.amazonaws.com'
+            Id: ${env:FILEAPIS3BUCKET}
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${FileApiCloudFrontOriginAccessIdentity}'
+          PriceClass: 'PriceClass_All'
+          ViewerCertificate:
+            AcmCertificateArn: '${env:CDNSharedACMCertificateArn}'
+            MinimumProtocolVersion: 'TLSv1.2_2021'  # OLD VALUE:'TLSv1.2_2019'
+            SslSupportMethod: 'sni-only'
+
+
+    # Specifying the CloudFront Distribution Security Response Header
+    FileApiCloudFrontSecurityHeaderResponse:
+      Type: AWS::CloudFront::ResponseHeadersPolicy
+      Properties: 
+        ResponseHeadersPolicyConfig: 
+          Comment: "practera-security-headers-for-${env:FILEAPIS3BUCKET}"
+          Name: "practera-security-headers-for-FileApi"
+          SecurityHeadersConfig: 
+            StrictTransportSecurity: 
+              AccessControlMaxAgeSec: 31536000
+              IncludeSubdomains: true
+              Override: true
+              Preload: true
+            # ContentSecurityPolicy: 
+            #   ContentSecurityPolicy: "frame-ancestors 'self' https://*.practera.com;"
+            #   Override: true
+            # ContentTypeOptions: 
+            #   Override: true
+            # ReferrerPolicy: 
+            #   ReferrerPolicy: "strict-origin-when-cross-origin"
+            #   Override: true
+            # XSSProtection: 
+            #   ModeBlock: true
+            #   Override: true
+            #   Protection: true
+          # CustomHeadersConfig: 
+          #   Items: 
+          #     - 
+          #       Header: "Server"
+          #       Override: true
+          #       Value: "Server"
+          #     -  
+          #       Header: "Permissions-Policy"
+          #       Override: true
+          #       Value: "accelerometer=(),camera=(),geolocation=(),gyroscope=(),magnetometer=(),microphone=(),payment=(),usb=()"
+
+# Security Header Response CFN END
+
+
+    ## Specifying the policies to make sure all files inside the Bucket are avaialble to CloudFront
+    FileApiS3BucketPolicy:
+      DependsOn: [FileApiCloudFrontOriginAccessIdentity]
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: ${env:FILEAPIS3BUCKET}
+        PolicyDocument:
+          Statement:
+          - Sid: S3-Bucket-Accesible via CDN OAI only
+            Action: 's3:*'
+            Effect: Allow
+            Resource: 'arn:aws:s3:::${env:FILEAPIS3BUCKET}/*'
+            Principal:
+              CanonicalUser: !GetAtt FileApiCloudFrontOriginAccessIdentity.S3CanonicalUserId 
+          - Sid: AllowSSLRequestsOnly # AWS Foundational Security Best Practices v1.0.0 S3.5
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+            - 'arn:aws:s3:::${env:FILEAPIS3BUCKET}'
+            - 'arn:aws:s3:::${env:FILEAPIS3BUCKET}/*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': false
+          - Sid: S3-Bucket-Accesible to filestack uploads
+            Action: 
+              - 's3:PutObjectAcl'
+              - 's3:PutObject'
+              - 's3:GetObject'
+            Effect: Allow
+            Resource: 
+            - 'arn:aws:s3:::${env:FILEAPIS3BUCKET}'
+            - 'arn:aws:s3:::${env:FILEAPIS3BUCKET}/*'
+            Principal:
+              AWS: 
+                - 'arn:aws:iam::${env:FILESTACKAWSID}:user/filestack-uploads'
+          # - Sid: S3-Bucket-Accesible to main practera account
+          #   Action: 
+          #     - 's3:PutObjectAcl'
+          #     - 's3:PutObject'
+          #     - 's3:GetObject'
+          #   Effect: Allow
+          #   Resource: 
+          #   - 'arn:aws:s3:::${env:FILEAPIS3BUCKET}'
+          #   - 'arn:aws:s3:::${env:FILEAPIS3BUCKET}/*'
+          #   Principal:
+          #     AWS: 
+          #       - 'arn:aws:iam::${env:P1STACKAWSID}:user/practera'
+
+
+    Route53RecordV2:
+      Type: 'AWS::Route53::RecordSetGroup'
+      Properties:
+        HostedZoneId: {'Fn::ImportValue': '${env:STACK_NAME}-PublicHostedZoneId-${env:ENV}'}
+        RecordSets:
+        - Name: ${env:FILEAPIS3BUCKET}
+          Type: CNAME
+          TTL: '3200'
+          ResourceRecords:
+            - !GetAtt 'FileApiCloudFrontDistribution.DomainName'
+
+    
+  Outputs:
+    FileApiCloudFrontDistributionOutput:
+      Value:
+        'Fn::GetAtt': [ FileApiCloudFrontDistribution, DomainName ]
+      Export:
+        Name: ${env:STACK_NAME}-FileApiCloudFrontDistributionOutput-${env:ENV}
+    
+
+    FileApiS3BucketURL:
+      Description: 'URL to static website.'
+      Value: https://${env:FILEAPIS3BUCKET}
+      Export:
+        Name: ${env:STACK_NAME}-FileApiS3BucketURL-${env:ENV}
+
+    FileApiCloudFrontDistributionID:
+      Description: 'CloudFront distribution id'
+      Value: !Ref FileApiCloudFrontDistribution
+      Export:
+        Name: ${env:STACK_NAME}-FileApiCloudFrontDistributionID-${env:ENV}
+
+
+    FileApiS3Bucket:
+      Description: 'Name of the S3 bucket storing the static files.'
+      Value: '${env:FILEAPIS3BUCKET}'
+      Export:
+        Name: ${env:STACK_NAME}-FileApiS3Bucket-${env:ENV}
