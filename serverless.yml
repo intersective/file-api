@@ -303,7 +303,7 @@ resources:
           - Sid: S3-Bucket-Accesible via CDN OAI only
             Action: 's3:GetObject'
             Effect: Allow
-            Resource: !Sub 'arn:aws:s3:::${FileApiS3Bucket}/*'
+            Resource: !Sub 'arn:aws:s3:::${FILEAPIS3BUCKET}/*'
             Principal:
               CanonicalUser: !GetAtt FileApiCloudFrontOriginAccessIdentity.S3CanonicalUserId 
           - Sid: AllowSSLRequestsOnly # AWS Foundational Security Best Practices v1.0.0 S3.5
@@ -311,8 +311,8 @@ resources:
             Principal: '*'
             Action: 's3:*'
             Resource:
-            - !Sub 'arn:aws:s3:::${FileApiS3Bucket}'
-            - !Sub 'arn:aws:s3:::${FileApiS3Bucket}/*'
+            - !Sub 'arn:aws:s3:::${FILEAPIS3BUCKET}'
+            - !Sub 'arn:aws:s3:::${FILEAPIS3BUCKET}/*'
             Condition:
               Bool:
                 'aws:SecureTransport': false
@@ -323,8 +323,8 @@ resources:
               - 's3:GetObject'
             Effect: Allow
             Resource: 
-            - !Sub 'arn:aws:s3:::${FileApiS3Bucket}'
-            - !Sub 'arn:aws:s3:::${FileApiS3Bucket}/*'
+            - !Sub 'arn:aws:s3:::${FILEAPIS3BUCKET}'
+            - !Sub 'arn:aws:s3:::${FILEAPIS3BUCKET}/*'
             Principal:
               AWS: 
                 - 'arn:aws:iam::${env:FILESTACKAWSID}:user/filestack-uploads'
@@ -335,8 +335,8 @@ resources:
           #     - 's3:GetObject'
           #   Effect: Allow
           #   Resource: 
-          #   - !Sub 'arn:aws:s3:::${FileApiS3Bucket}'
-          #   - !Sub 'arn:aws:s3:::${FileApiS3Bucket}/*'
+          #   - !Sub 'arn:aws:s3:::${FILEAPIS3BUCKET}'
+          #   - !Sub 'arn:aws:s3:::${FILEAPIS3BUCKET}/*'
           #   Principal:
           #     AWS: 
           #       - 'arn:aws:iam::${env:P1STACKAWSID}:user/practera'
