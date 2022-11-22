@@ -301,7 +301,7 @@ resources:
         PolicyDocument:
           Statement:
           - Sid: S3-Bucket-Accesible via CDN OAI only
-            Action: 's3:GetObject'
+            Action: 's3:*'
             Effect: Allow
             Resource: 'arn:aws:s3:::${env:FILEAPIS3BUCKET}/*'
             Principal:
