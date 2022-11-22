@@ -186,6 +186,8 @@ custom:
 
 
 
+resources:
+    
   Resources:
 
     ## Specifying the CloudFront Origin Access Identity CDN Distribution to server your Web Application
@@ -375,6 +377,6 @@ custom:
 
     FileApiS3Bucket:
       Description: 'Name of the S3 bucket storing the static files.'
-      Value: '${env:FILESS3BUCKET}'
+      Value: '${env:FILEAPIS3BUCKET}'
       Export:
         Name: ${env:STACK_NAME}-FileApiS3Bucket-${env:ENV}
