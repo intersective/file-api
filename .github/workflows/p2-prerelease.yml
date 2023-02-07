@@ -125,25 +125,14 @@ jobs:
       - name: Cloudformation Export variables
         run: |
           cat >> .env <<EOF
+          PRIVATESUBNET=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-SubnetsPrivate-$ENV\`].Value" --no-paginate --output text)
           CDNSharedACMCertificateArn=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-CDNSharedACMCertificateArn-$ENV\`].Value" --no-paginate --output text)
           ChatBotSNSTopicARN=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-ChatBotSNSTopicARN-$ENV\`].Value" --no-paginate --output text)
           SECURITYGP=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-CacheClientSecurityGroup-$ENV\`].Value" --no-paginate --output text),$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-DBClientSecurityGroup-$ENV\`].Value" --no-paginate --output text)
-          
-          PRIVATESUBNET=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-SubnetsPrivate-$ENV\`].Value" --no-paginate --output text)
-          
+                   
           EOF
           
-          echo "$STACK_NAME-SubnetsPrivate-$ENV"
-          echo "$STACK_NAME-SubnetAPrivate-$ENV"
-          echo "$STACK_NAME-SubnetBPrivate-$ENV"
-          echo "$STACK_NAME-SubnetCPrivate-$ENV"
-          
-          aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-SubnetAPrivate-$ENV\`].Value" --no-paginate --output text
-          aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-SubnetBPrivate-$ENV\`].Value" --no-paginate --output text
-          aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-SubnetCPrivate-$ENV\`].Value" --no-paginate --output text
 
-          echo "==="
-          aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-CacheClientSecurityGroup-$ENV\`].Value" --no-paginate --output text
           cat .env
           
 # ########################################################
