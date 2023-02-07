@@ -125,7 +125,7 @@ jobs:
       - name: Cloudformation Export variables
         run: |
           cat >> .env <<EOF
-          PRIVATESUBNET=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-SubnetsPrivate-$ENV\`].Value" --no-paginate --output text)
+          PRIVATESUBNET=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-SubnetsPrivate-$ENV\`].Value" --output text)
           CDNSharedACMCertificateArn=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-CDNSharedACMCertificateArn-$ENV\`].Value" --no-paginate --output text)
           ChatBotSNSTopicARN=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-ChatBotSNSTopicARN-$ENV\`].Value" --no-paginate --output text)
           SECURITYGP=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-CacheClientSecurityGroup-$ENV\`].Value" --no-paginate --output text),$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-DBClientSecurityGroup-$ENV\`].Value" --no-paginate --output text)
