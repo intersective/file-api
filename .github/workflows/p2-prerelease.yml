@@ -133,6 +133,11 @@ jobs:
           
           EOF
           
+          echo "$STACK_NAME-SubnetsPrivate-$ENV"
+          echo "$STACK_NAME-SubnetAPrivate-$ENV"
+          echo "$STACK_NAME-SubnetBPrivate-$ENV"
+          echo "$STACK_NAME-SubnetCPrivate-$ENV"
+          
           aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-SubnetAPrivate-$ENV\`].Value" --no-paginate --output text
           aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-SubnetBPrivate-$ENV\`].Value" --no-paginate --output text
           aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-SubnetCPrivate-$ENV\`].Value" --no-paginate --output text
