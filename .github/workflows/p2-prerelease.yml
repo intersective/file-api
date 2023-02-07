@@ -133,7 +133,9 @@ jobs:
           
           EOF
           
-          aws cloudformation list-exports --query "Exports[?Name==\`p2-prerelease-SubnetsPrivate-golive\`].Value" --no-paginate --output text
+          aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-SubnetAPrivate-$ENV\`].Value" --no-paginate --output text
+          aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-SubnetBPrivate-$ENV\`].Value" --no-paginate --output text
+          aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-SubnetCPrivate-$ENV\`].Value" --no-paginate --output text
           cat .env
           
 # ########################################################
