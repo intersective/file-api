@@ -131,6 +131,8 @@ jobs:
           PRIVATESUBNET=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-SubnetsPrivate-$ENV\`].Value" --no-paginate --output text)
           
           EOF
+
+          cat .env
           
 ########################################################
 #  SERVERLESS ENVIRONMENT VARIABLES (.env) 
@@ -160,6 +162,7 @@ jobs:
           
           EOF
           
+          cat .env
 
 
 
