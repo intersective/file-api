@@ -132,7 +132,8 @@ jobs:
           PRIVATESUBNET=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-SubnetsPrivate-$ENV\`].Value" --no-paginate --output text)
           
           EOF
-          aws cloudformation list-exports
+          
+          aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-SubnetsPrivate-$ENV\`].Value" --no-paginate --output text
           cat .env
           
 # ########################################################
@@ -163,7 +164,6 @@ jobs:
           
 #           EOF
           
-#           cat .env
 
 
 
