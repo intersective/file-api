@@ -1,0 +1,277 @@
+################################################
+#  GITHUB ACTION WORKFLOW NAME
+################################################
+name: Deploy to p2-prerelease environment
+
+
+################################################
+#  GITHUB ACTION EVENT TRIGGER
+################################################
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - prerelease
+      # - 'golive/v[0-9]+.[0-9]+.[0-9]+*'
+    
+
+################################################
+#  GITHUB ACTION JOBS
+################################################
+jobs:
+  deploy-p2-prerelease:
+    name: deploy-p2-prerelease
+    runs-on: ubuntu-latest
+    # environment: p2-prerelease
+    permissions:
+      id-token: write
+      contents: read
+    timeout-minutes: 15
+
+
+################################################
+#  GITHUB ACTIONS GLOBAL ENV VARIABLES  
+################################################
+    env:
+      REGION : ap-southeast-2
+      ENV : golive # Valid values are dev,test,live onl
+      STACK_NAME: p2-prerelease # Valid values are au,us,uk,p2,lf,nu,p1-sandbox,p1-stage,p2-prerelease,shared only
+      ROOTSTACK: file-api
+      CFNS3BucketName: devops-cfn-templates
+      PRIVATES3BucketName: devops-shared-private
+      PUBLICZONENAME: p2-prerelease.practera.com
+      LOG_LEVEL: DEBUG # Valid values are DEBUG,INFO,WARN and ERROR only
+      SAMPLE_DEBUG_LOG_RATE: 0.01 # CAUTION with this value increase cost as well.
+      STATUSREPORTS3Bucket: deployment-status.practera.com
+      STATUS: DEPLOYED
+      REQUESTOR: ${{ github.event.inputs.REQUESTOR }}
+      REASON: ${{ github.event.inputs.REASON }}
+      ENDPOINT: INTERNAL_LAMBDA_INVOKE_ONLY
+      BRANCH_TAG_NAME: prerelease
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+
+
+
+################################################
+#  GITHUB REPO CHECKOUT 
+################################################
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+
+################################################
+#  NODE ENV
+################################################    
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      
+
+################################################
+#  NODE MODULES CACHE  
+################################################
+      - name: Cache node modules
+        uses: actions/cache@v2
+        id: cache-node-modules
+        env:
+          cache-name: cache
+        with:
+          # npm cache files are stored in `~/.npm` on Linux/macOS
+          path: |
+            ~/.npm
+            node_modules
+            */*/node_modules
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
+
+################################################
+#  NODE MODULES INSTALL  
+################################################
+      - name: Install dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run:  npm install
+
+
+################################################
+#  GET P2 PRERELEASE AWS ORGANIZATION NUMBER 
+################################################
+      - name: Get AWS Organization Number
+        id: AWS_ORG
+        run: |
+          RESULT=$(echo $AWS_ACCOUNT_ID | jq -r .P2PRERELEASE)
+          echo "::add-mask::$RESULT"
+          echo "P2PRERELEASE=$RESULT" >> $GITHUB_OUTPUT
+
+################################################
+#  AWS CLI CONFIGURATION - DEVOPS P2 PRERELEASE
+################################################ 
+      - name: Configure AWS Credentials from p2 prerelease AU account
+        uses: ./.github/actions/aws-oidc
+        with:
+          role-to-assume: arn:aws:iam::${{ steps.AWS_ORG.outputs.P2PRERELEASE }}:role/github-role-file-api
+          region: ${{ env.REGION }}
+  
+
+##########################################################
+#  CLOUDFORMATION EXPORT VARIABLES
+##########################################################
+      - name: Cloudformation Export variables
+        run: |
+          cat >> .env <<EOF
+          CDNSharedACMCertificateArn=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-CDNSharedACMCertificateArn-$ENV\`].Value" --no-paginate --output text)
+          ChatBotSNSTopicARN=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-ChatBotSNSTopicARN-$ENV\`].Value" --no-paginate --output text)
+          SECURITYGP=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-CacheClientSecurityGroup-$ENV\`].Value" --no-paginate --output text),$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-DBClientSecurityGroup-$ENV\`].Value" --no-paginate --output text)
+          PRIVATESUBNET=$(aws cloudformation list-exports --query "Exports[?Name==\`$STACK_NAME-SubnetsPrivate-$ENV\`].Value" --no-paginate --output text)
+          
+          EOF
+          
+########################################################
+#  SERVERLESS ENVIRONMENT VARIABLES (.env) 
+##########################################################
+      - name: Serverless environment variables creation .env file
+        run: |
+          cat >> .env <<EOF
+          LOG_LEVEL=$LOG_LEVEL
+          SAMPLE_DEBUG_LOG_RATE=$SAMPLE_DEBUG_LOG_RATE
+
+          REDIS_HOST=redis.internal.${{ env.PUBLICZONENAME }}
+          REDIS_DB=0
+          ENV=$ENV
+          DB_HOST_READ=db.internal.${{ env.PUBLICZONENAME }}
+          DB_HOST=db.internal.${{ env.PUBLICZONENAME }}
+          DB_PASSWORD=$(aws secretsmanager get-secret-value --secret-id $STACK_NAME-CoreDBSecret-$ENV| jq --raw-output '.SecretString' | jq -r .password)
+          DB_DATABASE=$(aws secretsmanager get-secret-value --secret-id $STACK_NAME-CoreDBSecret-$ENV| jq --raw-output '.SecretString' | jq -r .dbname)
+          DB_USER=$(aws secretsmanager get-secret-value --secret-id $STACK_NAME-CoreDBSecret-$ENV| jq --raw-output '.SecretString' | jq -r .username)
+          DB_LOG_HOST=db.internal.${{ env.PUBLICZONENAME }}
+          DB_LOG_PASSWORD=$(aws secretsmanager get-secret-value --secret-id $STACK_NAME-CoreDBSecret-$ENV| jq --raw-output '.SecretString' | jq -r .password)
+          DB_LOG_DATABASE=$(aws secretsmanager get-secret-value --secret-id $STACK_NAME-CoreDBSecret-$ENV| jq --raw-output '.SecretString' | jq -r .dbname)
+          DB_LOG_USER=$(aws secretsmanager get-secret-value --secret-id $STACK_NAME-CoreDBSecret-$ENV| jq --raw-output '.SecretString' | jq -r .username)
+          CURRENT_REGION=$REGION
+          FILEAPIS3BUCKET=files.$PUBLICZONENAME
+          FILESTACKAWSID=593058860426
+          P1STACKAWSID=
+          
+          EOF
+          
+
+
+
+# # ################################################
+# # #  PERFORM LINT TEST
+# # ################################################
+#       - name: Run lint test if present
+#         run:  |
+#           npm run lint --if-present
+
+
+
+# # ###############################################################
+# # #  PERFORM UNIT TEST
+# # ##############################################################
+#       - name: Performing Unit test
+#         run: |
+#           npm run test --if-present
+
+
+# # ###############################################################
+# # #  SONARCLOUD SCANNER
+# # ##############################################################
+#       - name: Performing Sonarcloud Scanner
+#         uses: SonarSource/sonarcloud-github-action@master
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+#           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+
+
+##########################################################
+#  AWS S3 SYNC - SERVERLESS TEMPLATES UPLOAD
+##########################################################
+      - name: AWS S3 Sync operation
+        run: |
+          
+          aws s3 cp serverless.yml s3://$CFNS3BucketName/$STACK_NAME/$REGION/$ROOTSTACK/sls-templates/serverless.yml
+
+
+###############################################################
+#  SERVERLESS PACKAGING
+##############################################################
+      - name: Serverless packaging
+        run: |
+          node_modules/.bin/serverless package --package artifacts/${{ env.ENV }} --stage ${{ env.ENV }} --region ${{ env.REGION }} -v
+
+
+###############################################################
+#  SERVERLESS DEPLOYMENT
+##############################################################
+      - name: Serverless deployment
+        run: |
+          echo "Serverless Deploying $ROOTSTACK"
+          node_modules/.bin/serverless deploy --stage ${{ env.ENV }} --region ${{ env.REGION }} --package artifacts/${{ env.ENV }} -v
+          rm serverless.yml
+
+   
+# ##########################################################
+# #  SLACK NOTIFICATION
+# ##########################################################  
+      # - name: Slack Notification
+      #   if: always() # Pick up events even if the job fails or is canceled.
+      #   uses: 8398a7/action-slack@v3
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      #     MATRIX_CONTEXT: ${{ toJson(matrix) }} # required
+      #   with:
+      #     status: ${{ job.status }}
+      #     author_name: ${{ env.BRANCH_TAG_NAME }} - ${{ env.ROOTSTACK }} deployed to ${{ env.ENV }} environemnt in ${{ env.STACK_NAME }} AWS account
+      #     mention: 'here'
+      #     if_mention: failure,cancelled
+      #     job_name: deploy-p2-prerelease # Match the name above.
+      #     fields: repo,commit,eventName,ref,workflow,message,author,job,took
+      #     custom_payload: |
+      #       {
+      #       username: 'GitHub Action CI WorkFlow',
+      #       icon_emoji: ':github:',
+      #       attachments: [{
+      #         color: '${{ job.status }}' === 'success' ? 'good' : ${{ job.status }}' === 'failure' ? 'danger' : 'warning',
+      #         text:
+      #        `${process.env.AS_REPO}\n
+      #         ${process.env.AS_COMMIT}\n
+      #         ${process.env.AS_EVENT_NAME}\n
+      #         @${process.env.AS_REF}\n
+      #         @${process.env.AS_WORKFLOW}\n
+      #         ${process.env.AS_MESSAGE}\n
+      #         ${process.env.AS_AUTHOR}\n
+      #         ${process.env.AS_JOB}\n
+      #         ${process.env.AS_TOOK}`,
+      #       }]
+      #       }
+
+
+# ################################################
+# #  STATUS VARIABLE UPDATE
+# ################################################ 
+      - name: Deployment status variable update
+        if: ${{ failure() }}
+        run: |
+          echo "STATUS=FAILURE" >> $GITHUB_ENV
+
+# ################################################
+# #  DEVOPS-DEPLOYMENT REPORT
+# ################################################ 
+      - name: DevOps Deployment Reporting
+        if: always()
+        run: |
+          pip install --upgrade pip
+          pip install --upgrade csvtotable
+          export REASON=$(git log -2 --format=%s | sed -n 2p)
+          export REQUESTOR=${{ github.actor }}
+
+          aws s3 cp s3://$STATUSREPORTS3Bucket/deploy-reporting.sh deploy-reporting.sh
+          chmod +x deploy-reporting.sh && ./deploy-reporting.sh
